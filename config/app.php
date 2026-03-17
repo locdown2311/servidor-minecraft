@@ -68,7 +68,7 @@ return [
     'timezone' => 'America/Sao_Paulo',
 
     'server_ip' => env('SERVER_IP', '127.0.0.1'),
-    'docker_host' => env('DOCKER_HOST', 'http://localhost'),
+    'docker_host' => env('DOCKER_API_HOST', 'http://localhost'),
     'docker_socket' => env('DOCKER_SOCKET', '/var/run/docker.sock'),
     'minecraft_data_path' => env('MINECRAFT_DATA_PATH', '/mnt/docker_data/servidor_mine'),
 
