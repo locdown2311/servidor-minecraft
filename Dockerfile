@@ -26,7 +26,6 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instala extensões do PHP necessárias para o Laravel
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip pdo_sqlite soap
-RUN pecl install redis && docker-php-ext-enable redis
 
 # Aumenta os limites de envio de arquivos e memória do PHP para 50MB
 RUN echo "upload_max_filesize = 50M\npost_max_size = 50M\nmemory_limit = 256M" > /usr/local/etc/php/conf.d/uploads.ini

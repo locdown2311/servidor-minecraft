@@ -24,7 +24,6 @@ services:
       - "80:80"
     depends_on:
       - mysql
-      - redis
     networks:
       - mchost
 
@@ -44,18 +43,6 @@ services:
       - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
-    networks:
-      - mchost
-
-  # ================================
-  # Redis (Filas + Cache)
-  # ================================
-  redis:
-    image: redis:7-alpine
-    container_name: mchost_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
     networks:
       - mchost
 
