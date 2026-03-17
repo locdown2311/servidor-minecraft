@@ -78,53 +78,9 @@ RUN apt-get update && apt-get install -y cron && rm -rf /var/lib/apt/lists/*
 RUN echo "* * * * * www-data cd /var/www/html && php artisan schedule:run >> /var/www/html/storage/logs/scheduler.log 2>&1" > /etc/cron.d/laravel-scheduler
 RUN chmod 0644 /etc/cron.d/laravel-scheduler
 
-# Configura o Supervisor para rodar o Apache e o Worker do Laravel
-COPY <<-"EOF" /etc/supervisor/conf.d/supervisord.conf
-[supervisord]
-nodaemon=true
-user=root
-logfile=/var/log/supervisor/supervisord.log
-pidfile=/var/run/supervisord.pid
-
-[program:apache2]
-command=apache2-foreground
-autostart=true
-autorestart=true
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-
-[program:laravel-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/html/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
-autostart=true
-autorestart=true
-stopasgroup=true
-killasgroup=true
-user=www-data
-numprocs=1
-redirect_stderr=true
-stdout_logfile=/var/www/html/storage/logs/worker.log
-stopwaitsecs=3600
-
-[program:cron]
-command=/usr/sbin/cron -f
-autostart=true
-autorestart=true
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-EOF
-
-# Script de entrypoint modificado para inicializar o Supervisor
-COPY --chmod=755 <<-"EOF" /usr/local/bin/entrypoint.sh
-#!/bin/sh
-# Ajusta permissões do storage antes de iniciar os serviços
-chown -R www-data:www-data /var/www/html/storage
-# Executa o supervisor que gerenciará o Apache e a Fila
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-EOF
+# Configura o Supervisor e entrypoint (arquivos externos)
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 CMD ["/usr/local/bin/entrypoint.sh"]
