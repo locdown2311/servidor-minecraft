@@ -11,6 +11,7 @@ class ServerProvisioningService
 {
     protected string $dockerHost;
     protected ?string $socketPath;
+    protected string $dataPath;
 
     public function __construct()
     {
@@ -18,6 +19,7 @@ class ServerProvisioningService
         // Monte o socket no container: -v /var/run/docker.sock:/var/run/docker.sock
         $this->socketPath = config('app.docker_socket', '/var/run/docker.sock');
         $this->dockerHost = rtrim(config('app.docker_host', 'http://localhost'), '/');
+        $this->dataPath = rtrim(config('app.minecraft_data_path', '/mnt/docker_data/servidor_mine'), '/');
     }
 
     /**
@@ -58,7 +60,7 @@ class ServerProvisioningService
                         ],
                     ],
                     'Binds' => [
-                        $volumeName . ':/data',
+                        $volumeName . ':' . $this->dataPath,
                     ],
                     'RestartPolicy' => [
                         'Name' => 'unless-stopped',
@@ -346,7 +348,7 @@ class ServerProvisioningService
     public function getServerProperties(Server $server): array
     {
         try {
-            $output = $this->execInContainer($server, ['cat', '/data/server.properties']);
+            $output = $this->execInContainer($server, ['cat', $this->dataPath . '/server.properties']);
             $properties = [];
 
             foreach (explode("\n", $output) as $line) {
@@ -381,7 +383,7 @@ class ServerProvisioningService
 
             // Write using sh -c with heredoc
             $escaped = str_replace("'", "'\\''", $content);
-            $this->execInContainer($server, ['sh', '-c', "printf '%s' '{$escaped}' > /data/server.properties"]);
+            $this->execInContainer($server, ['sh', '-c', "printf '%s' '{$escaped}' > {$this->dataPath}/server.properties"]);
 
             return true;
         } catch (\Exception $e) {

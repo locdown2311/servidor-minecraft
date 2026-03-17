@@ -10,12 +10,13 @@ class FileManagerService
 {
     protected string $dockerHost;
     protected ?string $socketPath;
-    protected string $basePath = '/data';
+    protected string $basePath;
 
     public function __construct()
     {
         $this->socketPath = config('app.docker_socket', '/var/run/docker.sock');
         $this->dockerHost = rtrim(config('app.docker_host', 'http://localhost'), '/');
+        $this->basePath = rtrim(config('app.minecraft_data_path', '/mnt/docker_data/servidor_mine'), '/');
     }
 
     /**
@@ -218,7 +219,7 @@ class FileManagerService
     }
 
     /**
-     * Resolve path safely within /data.
+     * Resolve path safely within the base data directory.
      */
     protected function resolvePath(string $path): string
     {

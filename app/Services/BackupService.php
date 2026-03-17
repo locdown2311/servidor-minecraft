@@ -10,12 +10,15 @@ class BackupService
 {
     protected string $dockerHost;
     protected ?string $socketPath;
-    protected string $backupDir = '/data/backups';
+    protected string $backupDir;
+    protected string $dataDir;
 
     public function __construct()
     {
         $this->socketPath = config('app.docker_socket', '/var/run/docker.sock');
         $this->dockerHost = rtrim(config('app.docker_host', 'http://localhost'), '/');
+        $this->dataDir = rtrim(config('app.minecraft_data_path', '/mnt/docker_data/servidor_mine'), '/');
+        $this->backupDir = $this->dataDir . '/backups';
     }
 
     /**
@@ -34,7 +37,7 @@ class BackupService
             // Create tarball of the world directory, excluding the backups dir itself
             $this->execInContainer($server, [
                 'sh', '-c',
-                "cd /data && tar -czf {$this->backupDir}/{$filename} --exclude='backups' --exclude='*.tar.gz' world/ server.properties *.json 2>/dev/null || true"
+                "cd {$this->dataDir} && tar -czf {$this->backupDir}/{$filename} --exclude='backups' --exclude='*.tar.gz' world/ server.properties *.json 2>/dev/null || true"
             ]);
 
             Log::info("Backup created for server #{$server->id}: {$filename}");
@@ -95,10 +98,10 @@ class BackupService
                 return false;
             }
 
-            // Extract backup over /data
+            // Extract backup over the data directory
             $this->execInContainer($server, [
                 'sh', '-c',
-                "cd /data && tar -xzf {$this->backupDir}/{$filename}"
+                "cd {$this->dataDir} && tar -xzf {$this->backupDir}/{$filename}"
             ]);
 
             Log::info("Backup restored for server #{$server->id}: {$filename}");

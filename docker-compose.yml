@@ -18,6 +18,8 @@ services:
       - .:/var/www/html
       # Docker socket do HOST montado para gerenciar containers
       - /var/run/docker.sock:/var/run/docker.sock
+      # Dados dos servidores Minecraft
+      - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
     ports:
       - "80:80"
     depends_on:
@@ -70,6 +72,7 @@ services:
     volumes:
       - .:/var/www/html
       - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
     depends_on:
       - mysql
       - redis
@@ -93,6 +96,7 @@ services:
     volumes:
       - .:/var/www/html
       - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
     depends_on:
       - mysql
       - redis
