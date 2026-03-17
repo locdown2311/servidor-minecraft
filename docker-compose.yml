@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # ================================
+  # Aplicação Laravel (PHP + Nginx)
+  # ================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mchost_app
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    volumes:
+      # Código da aplicação
+      - .:/var/www/html
+      # Docker socket do HOST montado para gerenciar containers
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - mchost
+
+  # ================================
+  # MySQL
+  # ================================
+  mysql:
+    image: mysql:8.0
+    container_name: mchost_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: mchost
+      MYSQL_USER: mchost
+      MYSQL_PASSWORD: "${DB_PASSWORD:-secret}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootsecret}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - mchost
+
+  # ================================
+  # Redis (Filas + Cache)
+  # ================================
+  redis:
+    image: redis:7-alpine
+    container_name: mchost_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - mchost
+
+  # ================================
+  # Queue Worker
+  # ================================
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mchost_queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - .:/var/www/html
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - mchost
+
+  # ================================
+  # Scheduler (Cron)
+  # ================================
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mchost_scheduler
+    restart: unless-stopped
+    command: >
+      sh -c "while true; do
+        php /var/www/html/artisan schedule:run --verbose --no-interaction;
+        sleep 60;
+      done"
+    volumes:
+      - .:/var/www/html
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - mchost
+
+volumes:
+  mysql_data:
+
+networks:
+  mchost:
+    driver: bridge
