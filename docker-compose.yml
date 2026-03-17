@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # ================================
-  # Aplicação Laravel (PHP + Nginx)
+  # Aplicação Laravel (PHP + Apache + Worker + Scheduler)
   # ================================
   app:
     build:
@@ -14,12 +14,12 @@ services:
       - APP_ENV=production
       - APP_DEBUG=false
     volumes:
-      # Código da aplicação
-      - .:/var/www/html
       # Docker socket do HOST montado para gerenciar containers
       - /var/run/docker.sock:/var/run/docker.sock
       # Dados dos servidores Minecraft
       - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
+      # Storage persistente
+      - app_storage:/var/www/html/storage
     ports:
       - "80:80"
     depends_on:
@@ -59,52 +59,9 @@ services:
     networks:
       - mchost
 
-  # ================================
-  # Queue Worker
-  # ================================
-  queue:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: mchost_queue
-    restart: unless-stopped
-    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
-    volumes:
-      - .:/var/www/html
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - mchost
-
-  # ================================
-  # Scheduler (Cron)
-  # ================================
-  scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: mchost_scheduler
-    restart: unless-stopped
-    command: >
-      sh -c "while true; do
-        php /var/www/html/artisan schedule:run --verbose --no-interaction;
-        sleep 60;
-      done"
-    volumes:
-      - .:/var/www/html
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - mchost
-
 volumes:
   mysql_data:
+  app_storage:
 
 networks:
   mchost:
