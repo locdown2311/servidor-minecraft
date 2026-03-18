@@ -1,4 +1,14 @@
 #!/bin/sh
+# Cria .env a partir do .env.example se não existir
+if [ ! -f /var/www/html/.env ]; then
+    cp /var/www/html/.env.example /var/www/html/.env
+    echo ".env criado a partir do .env.example"
+fi
+
+# Ajusta permissões do .env
+chown www-data:www-data /var/www/html/.env
+chmod 644 /var/www/html/.env
+
 # Ajusta permissões do storage antes de iniciar os serviços
 chown -R www-data:www-data /var/www/html/storage
 chmod -R 775 /var/www/html/storage
