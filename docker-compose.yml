@@ -19,6 +19,10 @@ services:
       - DB_DATABASE=mchost
       - DB_USERNAME=mchost
       - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - DOCKER_API_HOST=${DOCKER_API_HOST:-http://localhost}
+      - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
+      - MINECRAFT_HOST_DATA_PATH=${MINECRAFT_HOST_DATA_PATH:-/mnt/docker_data/servidor_mine}
+      - MINECRAFT_CONTAINER_PATH=${MINECRAFT_CONTAINER_PATH:-/data}
     volumes:
       # Docker socket do HOST montado para gerenciar containers
       - /var/run/docker.sock:/var/run/docker.sock

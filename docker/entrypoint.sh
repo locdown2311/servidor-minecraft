@@ -1,4 +1,13 @@
 #!/bin/sh
+
+# Ajusta permissões do socket do Docker (dinâmico)
+if [ -S /var/run/docker.sock ]; then
+    DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+    groupadd -for -g "$DOCKER_GID" docker_host
+    usermod -aG docker_host www-data
+    echo "Grupamento 'docker_host' ($DOCKER_GID) configurado para www-data"
+fi
+
 # Cria .env a partir do .env.example se não existir
 if [ ! -f /var/www/html/.env ]; then
     cp /var/www/html/.env.example /var/www/html/.env
