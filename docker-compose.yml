@@ -40,7 +40,7 @@ services:
   # MySQL
   # ================================
   mysql:
-    image: mysql:8.0
+    image: mariadb:latest
     container_name: mchost_mysql
     restart: unless-stopped
     environment:
