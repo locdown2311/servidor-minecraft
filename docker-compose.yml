@@ -11,8 +11,14 @@ services:
     container_name: mchost_app
     restart: unless-stopped
     environment:
-      - APP_ENV=production
-      - APP_DEBUG=false
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=mchost
+      - DB_USERNAME=mchost
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
     volumes:
       # Docker socket do HOST montado para gerenciar containers
       - /var/run/docker.sock:/var/run/docker.sock

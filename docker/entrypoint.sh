@@ -20,6 +20,14 @@ php /var/www/html/artisan key:generate --force --no-interaction
 # Cria o link simbólico do storage
 php /var/www/html/artisan storage:link --force --no-interaction
 
+# Espera o MySQL ficar pronto se necessário
+if [ "$DB_CONNECTION" = "mysql" ]; then
+    echo "Aguardando MySQL..."
+    until php artisan db:monitor --path=/var/www/html/database; do # This is a simple check, or just a sleep
+        sleep 2
+    done
+fi
+
 # Roda as migrations
 php /var/www/html/artisan migrate --force --no-interaction
 
