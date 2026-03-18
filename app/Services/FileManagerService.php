@@ -336,7 +336,7 @@ class FileManagerService
      */
     protected function buildClient(): \Illuminate\Http\Client\PendingRequest
     {
-        $request = Http::timeout(30);
+        $request = Http::timeout(300);
 
         if ($this->socketPath && file_exists($this->socketPath)) {
             $request = $request->withOptions([

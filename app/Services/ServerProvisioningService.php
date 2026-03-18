@@ -45,14 +45,15 @@ class ServerProvisioningService
             $volumeName = 'mc_data_' . $server->id;
 
             // 1. Ensure images are present
-            $this->pullImage('itzg/minecraft-server');
+            $this->pullImage('itzg/minecraft-server:java21');
             $this->pullImage('fauria/vsftpd');
 
             // 2. Prepare host path for the server
+            $serverHostPath = $this->hostDataPath . '/mc_' . $server->id;
 
             // 2. Create Minecraft container
             $mcResponse = $this->dockerApi('POST', '/containers/create', [
-                'Image' => 'itzg/minecraft-server',
+                'Image' => 'itzg/minecraft-server:java21',
                 'name' => 'mc_' . $server->id,
                 'Env' => [
                     'EULA=TRUE',
@@ -556,7 +557,7 @@ class ServerProvisioningService
      */
     protected function buildClient(): \Illuminate\Http\Client\PendingRequest
     {
-        $request = Http::timeout(30);
+        $request = Http::timeout(300); // Aumento para 300s para suportar downloads de imagens
 
         // Se o socket Unix existe, usar CURLOPT_UNIX_SOCKET_PATH
         // para comunicar diretamente com o Docker daemon (Linux)
