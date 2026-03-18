@@ -28,8 +28,9 @@ if [ "$DB_CONNECTION" = "mysql" ]; then
     done
 fi
 
-# Roda as migrations
+# Roda as migrations e seeders
 php /var/www/html/artisan migrate --force --no-interaction
+php /var/www/html/artisan db:seed --force --no-interaction
 
 # Limpa caches
 php /var/www/html/artisan config:cache

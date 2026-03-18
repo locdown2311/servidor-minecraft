@@ -27,7 +27,7 @@
                         @foreach($plans as $plan)
                             <label class="mc-plan-option {{ $loop->index === 1 ? 'mc-plan-option-recommended' : '' }}">
                                 <input type="radio" name="plan_id" value="{{ $plan->id }}"
-                                       {{ old('plan_id', $plans[1]->id ?? $plans[0]->id) == $plan->id ? 'checked' : '' }}>
+                                       {{ old('plan_id', $plans[0]->id ?? null) == $plan->id ? 'checked' : '' }}>
                                 <div class="mc-plan-option-content">
                                     <div class="mc-plan-option-header">
                                         <span class="mc-plan-option-name">{{ $plan->name }}</span>
