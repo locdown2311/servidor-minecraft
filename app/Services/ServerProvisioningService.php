@@ -541,9 +541,11 @@ class ServerProvisioningService
 
     /**
      * Find a free port in the given range.
+     * Checks both the database AND Docker containers on the host.
      */
     protected function findFreePort(int $min, int $max): int
     {
+        // 1. Portas registradas no banco de dados
         $usedPorts = Server::whereNotNull('port')
             ->whereIn('status', ['running', 'provisioning', 'stopped'])
             ->pluck('port')
@@ -554,6 +556,10 @@ class ServerProvisioningService
             )
             ->toArray();
 
+        // 2. Portas realmente em uso nos containers Docker do host
+        $dockerPorts = $this->getDockerUsedPorts();
+        $usedPorts = array_unique(array_merge($usedPorts, $dockerPorts));
+
         for ($port = $min; $port <= $max; $port++) {
             if (!in_array($port, $usedPorts)) {
                 return $port;
@@ -561,6 +567,33 @@ class ServerProvisioningService
         }
 
         throw new \RuntimeException("No free ports available in range {$min}-{$max}");
+    }
+
+    /**
+     * Get all host ports currently bound by Docker containers.
+     */
+    protected function getDockerUsedPorts(): array
+    {
+        try {
+            $containers = $this->dockerApi('GET', '/containers/json', null, ['all' => true], true);
+            if (!$containers || !is_array($containers)) {
+                return [];
+            }
+
+            $ports = [];
+            foreach ($containers as $container) {
+                foreach ($container['Ports'] ?? [] as $portInfo) {
+                    if (isset($portInfo['PublicPort'])) {
+                        $ports[] = (int) $portInfo['PublicPort'];
+                    }
+                }
+            }
+
+            return $ports;
+        } catch (\Exception $e) {
+            Log::warning('Could not query Docker for used ports: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**
