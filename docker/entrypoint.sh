@@ -18,6 +18,10 @@ fi
 chown www-data:www-data /var/www/html/.env
 chmod 644 /var/www/html/.env
 
+# Limpa caches que podem estar corrompidos ou com configs antigas
+php /var/www/html/artisan config:clear
+php /var/www/html/artisan cache:clear
+
 # Ajusta permissões do storage antes de iniciar os serviços
 chown -R www-data:www-data /var/www/html/storage
 chmod -R 775 /var/www/html/storage
@@ -29,10 +33,11 @@ php /var/www/html/artisan key:generate --force --no-interaction
 # Cria o link simbólico do storage
 php /var/www/html/artisan storage:link --force --no-interaction
 
-# Espera o MySQL ficar pronto se necessário
+# Espera o MariaDB ficar pronto se necessário
 if [ "$DB_CONNECTION" = "mysql" ]; then
-    echo "Aguardando MySQL..."
-    until php artisan db:monitor; do # This is a simple check, or just a sleep
+    echo "Aguardando MariaDB (DNS)..."
+    sleep 5 # Pequena pausa para o DNS do Docker estabilizar
+    until php artisan db:monitor; do 
         sleep 2
     done
 fi
