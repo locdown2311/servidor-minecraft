@@ -40,7 +40,7 @@ php /var/www/html/artisan storage:link --force --no-interaction
 if [ "$DB_CONNECTION" = "mysql" ]; then
     echo "Aguardando MariaDB..."
     # Testa a conexão TCP diretamente, sem depender do artisan
-    MAX_RETRIES=30
+    MAX_RETRIES=3
     RETRY=0
     until nc -z -w2 mariadb 3306 2>/dev/null; do
         RETRY=$((RETRY + 1))

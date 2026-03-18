@@ -380,11 +380,14 @@ class ServerProvisioningService
                 $cpuPercent = round(($cpuDelta / $systemDelta) * $numCpus * 100, 1);
             }
 
-            // Memory usage
+            // Memory usage — usa o limite do PLANO, não do host
             $memUsage = $stats['memory_stats']['usage'] ?? 0;
-            $memLimit = $stats['memory_stats']['limit'] ?? 0;
             $memCache = $stats['memory_stats']['stats']['cache'] ?? 0;
             $memUsed = $memUsage - $memCache;
+
+            // Limite = RAM do plano do servidor (em bytes)
+            $planRamBytes = ($server->plan->ram_mb ?? 1024) * 1024 * 1024;
+            $memLimit = $planRamBytes;
             $memPercent = $memLimit > 0 ? round(($memUsed / $memLimit) * 100, 1) : 0;
 
             // Network I/O
