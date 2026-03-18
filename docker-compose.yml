@@ -19,7 +19,7 @@ services:
       # Dados dos servidores Minecraft
       - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
       # Storage persistente
-      - app_storage:/var/www/html/storage
+      - /mnt/docker_data/servidor_mine/storage:/var/www/html/storage
     ports:
       - "80:80"
     depends_on:
@@ -48,7 +48,6 @@ services:
 
 volumes:
   mysql_data:
-  app_storage:
 
 networks:
   mchost:
