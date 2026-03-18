@@ -210,7 +210,7 @@ class BackupService
      */
     protected function buildClient(): \Illuminate\Http\Client\PendingRequest
     {
-        $request = Http::timeout(60); // Longer timeout for backups
+        $request = Http::timeout(300); // Longer timeout for backups
 
         if ($this->socketPath && file_exists($this->socketPath)) {
             $request = $request->withOptions([

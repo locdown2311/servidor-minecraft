@@ -45,8 +45,12 @@ class ServerProvisioningService
             $volumeName = 'mc_data_' . $server->id;
 
             // 1. Ensure images are present
-            $this->pullImage('itzg/minecraft-server:java21');
-            $this->pullImage('fauria/vsftpd');
+            if (!$this->pullImage('itzg/minecraft-server:java21')) {
+                throw new \RuntimeException("Failed to pull required image: itzg/minecraft-server:java21");
+            }
+            if (!$this->pullImage('fauria/vsftpd')) {
+                throw new \RuntimeException("Failed to pull required image: fauria/vsftpd");
+            }
 
             // 2. Prepare host path for the server
             $serverHostPath = $this->hostDataPath . '/mc_' . $server->id;
@@ -142,13 +146,20 @@ class ServerProvisioningService
     /**
      * Pull a Docker image from a registry.
      */
-    protected function pullImage(string $image): void
+    protected function pullImage(string $image): bool
     {
         try {
             Log::info("Pulling Docker image: {$image}");
-            $this->dockerApi('POST', '/images/create', null, ['fromImage' => $image]);
+            $parts = explode(':', $image);
+            $query = ['fromImage' => $parts[0]];
+            if (isset($parts[1])) {
+                $query['tag'] = $parts[1];
+            }
+            $this->dockerApi('POST', '/images/create', null, $query);
+            return true;
         } catch (\Exception $e) {
             Log::warning("Failed to pull image {$image}: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -233,7 +244,7 @@ class ServerProvisioningService
     public function getLogs(Server $server, int $lines = 100): string
     {
         try {
-            $url = $this->dockerHost . '/v1.43' . "/containers/mc_{$server->id}/logs?stdout=true&stderr=true&tail={$lines}";
+            $url = $this->dockerHost . '/' . $this->apiVersion . "/containers/mc_{$server->id}/logs?stdout=true&stderr=true&tail={$lines}";
 
             $request = Http::timeout(5);
 
@@ -278,7 +289,7 @@ class ServerProvisioningService
             }
 
             // Start exec and get output
-            $url = $this->dockerHost . '/v1.43' . "/exec/{$execId}/start";
+            $url = $this->dockerHost . '/' . $this->apiVersion . "/exec/{$execId}/start";
             $response = $this->buildClient()
                 ->withBody(json_encode(['Detach' => false, 'Tty' => false]), 'application/json')
                 ->post($url);
@@ -302,7 +313,7 @@ class ServerProvisioningService
     {
         try {
             $containerName = 'mc_' . $server->id;
-            $url = $this->dockerHost . '/v1.43' . "/containers/{$containerName}/stats?stream=false";
+            $url = $this->dockerHost . '/' . $this->apiVersion . "/containers/{$containerName}/stats?stream=false";
 
             $response = $this->buildClient()->timeout(5)->get($url);
 
