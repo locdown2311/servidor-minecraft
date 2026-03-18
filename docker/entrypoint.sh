@@ -18,14 +18,17 @@ fi
 chown www-data:www-data /var/www/html/.env
 chmod 644 /var/www/html/.env
 
-# Limpa caches que podem estar corrompidos ou com configs antigas
-php /var/www/html/artisan config:clear
-php /var/www/html/artisan cache:clear
-
 # Ajusta permissões do storage antes de iniciar os serviços
 chown -R www-data:www-data /var/www/html/storage
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
+
+# Limpa cache de configuração SEM tocar no banco
+# (remove os arquivos de cache diretamente para evitar conexão ao DB)
+rm -f /var/www/html/bootstrap/cache/config.php
+rm -f /var/www/html/bootstrap/cache/routes-v7.php
+rm -f /var/www/html/bootstrap/cache/services.php
+rm -f /var/www/html/bootstrap/cache/packages.php
 
 # Gera a APP_KEY se não existir
 php /var/www/html/artisan key:generate --force --no-interaction
@@ -35,18 +38,27 @@ php /var/www/html/artisan storage:link --force --no-interaction
 
 # Espera o MariaDB ficar pronto se necessário
 if [ "$DB_CONNECTION" = "mysql" ]; then
-    echo "Aguardando MariaDB (DNS)..."
-    sleep 5 # Pequena pausa para o DNS do Docker estabilizar
-    until php artisan db:monitor; do 
+    echo "Aguardando MariaDB..."
+    # Testa a conexão TCP diretamente, sem depender do artisan
+    MAX_RETRIES=30
+    RETRY=0
+    until nc -z -w2 mariadb 3306 2>/dev/null; do
+        RETRY=$((RETRY + 1))
+        if [ $RETRY -ge $MAX_RETRIES ]; then
+            echo "ERRO: MariaDB não respondeu após $MAX_RETRIES tentativas"
+            break
+        fi
+        echo "  Tentativa $RETRY/$MAX_RETRIES - aguardando MariaDB na porta 3306..."
         sleep 2
     done
+    echo "MariaDB disponível!"
 fi
 
 # Roda as migrations e seeders
 php /var/www/html/artisan migrate --force --no-interaction
 php /var/www/html/artisan db:seed --force --no-interaction
 
-# Limpa caches
+# Reconstrói os caches (APÓS o banco estar pronto)
 php /var/www/html/artisan config:cache
 php /var/www/html/artisan route:cache
 php /var/www/html/artisan view:cache
