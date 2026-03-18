@@ -50,8 +50,6 @@ services:
       MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootsecret}"
     volumes:
       - mariadb_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
     networks:
       - mchost
 
