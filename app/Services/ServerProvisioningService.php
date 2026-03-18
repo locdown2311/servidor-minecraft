@@ -11,7 +11,8 @@ class ServerProvisioningService
 {
     protected string $dockerHost;
     protected ?string $socketPath;
-    protected string $dataPath;
+    protected string $hostDataPath;
+    protected string $containerDataPath;
 
     public function __construct()
     {
@@ -19,7 +20,12 @@ class ServerProvisioningService
         // Monte o socket no container: -v /var/run/docker.sock:/var/run/docker.sock
         $this->socketPath = config('app.docker_socket', '/var/run/docker.sock');
         $this->dockerHost = rtrim(config('app.docker_host', 'http://localhost'), '/');
-        $this->dataPath = rtrim(config('app.minecraft_data_path', '/mnt/docker_data/servidor_mine'), '/');
+        
+        // Caminho no HOST onde os dados ficarão (/mnt/docker_data/servidor_mine)
+        $this->hostDataPath = rtrim(config('app.minecraft_host_data_path', '/mnt/docker_data/servidor_mine'), '/');
+        
+        // Caminho INTERNO no container Minecraft (itzg/minecraft-server usa /data)
+        $this->containerDataPath = config('app.minecraft_container_path', '/data');
     }
 
     /**
@@ -36,10 +42,9 @@ class ServerProvisioningService
             $ftpPass = Str::random(16);
             $volumeName = 'mc_data_' . $server->id;
 
-            // 1. Create shared volume
-            $this->dockerApi('POST', '/volumes/create', [
-                'Name' => $volumeName,
-            ]);
+            // 1. Prepare host path for the server
+            $serverHostPath = $this->hostDataPath . '/mc_' . $server->id;
+            // Note: Docker typically creates the host directory automatically if it doesn't exist when using Binds
 
             // 2. Create Minecraft container
             $mcResponse = $this->dockerApi('POST', '/containers/create', [
@@ -60,7 +65,7 @@ class ServerProvisioningService
                         ],
                     ],
                     'Binds' => [
-                        $volumeName . ':' . $this->dataPath,
+                        $serverHostPath . ':' . $this->containerDataPath,
                     ],
                     'RestartPolicy' => [
                         'Name' => 'unless-stopped',
@@ -93,7 +98,7 @@ class ServerProvisioningService
                         ],
                     ],
                     'Binds' => [
-                        $volumeName . ':/home/vsftpd/' . $ftpUser,
+                        $serverHostPath . ':/home/vsftpd/' . $ftpUser,
                     ],
                     'RestartPolicy' => [
                         'Name' => 'unless-stopped',
@@ -191,8 +196,11 @@ class ServerProvisioningService
             $this->dockerApi('DELETE', "/containers/mc_{$server->id}", query: ['force' => 'true'], ignoreErrors: true);
             $this->dockerApi('DELETE', "/containers/ftp_{$server->id}", query: ['force' => 'true'], ignoreErrors: true);
 
-            // Remove volume
-            $this->dockerApi('DELETE', "/volumes/mc_data_{$server->id}", ignoreErrors: true);
+            // Remove volume (not used anymore, we use host binds)
+            // $this->dockerApi('DELETE', "/volumes/mc_data_{$server->id}", ignoreErrors: true);
+            
+            // Note: Manual cleanup of $serverHostPath might be needed here if desired,
+            // but usually we keep it for data persistence unless explicitly asked.
 
             return true;
         } catch (\Exception $e) {
@@ -348,7 +356,7 @@ class ServerProvisioningService
     public function getServerProperties(Server $server): array
     {
         try {
-            $output = $this->execInContainer($server, ['cat', $this->dataPath . '/server.properties']);
+            $output = $this->execInContainer($server, ['cat', $this->containerDataPath . '/server.properties']);
             $properties = [];
 
             foreach (explode("\n", $output) as $line) {
@@ -383,7 +391,7 @@ class ServerProvisioningService
 
             // Write using sh -c with heredoc
             $escaped = str_replace("'", "'\\''", $content);
-            $this->execInContainer($server, ['sh', '-c', "printf '%s' '{$escaped}' > {$this->dataPath}/server.properties"]);
+            $this->execInContainer($server, ['sh', '-c', "printf '%s' '{$escaped}' > {$this->containerDataPath}/server.properties"]);
 
             return true;
         } catch (\Exception $e) {

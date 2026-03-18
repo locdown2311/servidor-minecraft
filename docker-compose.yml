@@ -16,10 +16,8 @@ services:
     volumes:
       # Docker socket do HOST montado para gerenciar containers
       - /var/run/docker.sock:/var/run/docker.sock
-      # Dados dos servidores Minecraft
-      - /mnt/docker_data/servidor_mine:/mnt/docker_data/servidor_mine
-      # Storage persistente
-      - /mnt/docker_data/servidor_mine/storage:/var/www/html/storage
+      # Storage persistente do Laravel (No disco local)
+      - ./storage:/var/www/html/storage
     ports:
       - "80:80"
     depends_on:
