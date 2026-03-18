@@ -30,7 +30,8 @@ class BackupService
     {
         try {
             $timestamp = date('Y-m-d_H-i-s');
-            $name = $label ? "{$label}_{$timestamp}" : "backup_{$timestamp}";
+            $serverSlug = preg_replace('/[^a-zA-Z0-9_-]/', '_', $server->name ?? 'server');
+            $name = $label ? "{$label}_{$timestamp}" : "{$serverSlug}_{$timestamp}";
             $filename = "{$name}.tar.gz";
 
             // Ensure backup directory exists

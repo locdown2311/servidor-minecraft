@@ -44,8 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/servidores/{server}/configuracoes', [ServerController::class, 'settings'])->name('servers.settings');
     Route::post('/servidores/{server}/configuracoes', [ServerController::class, 'saveSettings'])->name('servers.settings.save');
 
-    // Server Panel — Resources (AJAX)
+    // Server Panel — Resources & Status (AJAX)
     Route::get('/servidores/{server}/recursos', [ServerController::class, 'resources'])->name('servers.resources');
+    Route::get('/servidores/{server}/status', [ServerController::class, 'status'])->name('servers.status');
 
     // Server Panel — File Manager
     Route::get('/servidores/{server}/arquivos', [ServerController::class, 'files'])->name('servers.files');

@@ -173,39 +173,57 @@
         </div>
     </div>
 
-    @if($server->isRunning())
     <script>
-        // Auto-refresh resource stats every 10 seconds
+        const SERVER_ID = '{{ $server->id }}';
+        const RESOURCES_URL = '{{ route("servers.resources", $server) }}';
+        let currentStatus = '{{ $server->status }}';
+
+        // Poll every 5 seconds — ALWAYS, regardless of current status
         setInterval(function() {
-            fetch('{{ route("servers.resources", $server) }}')
+            fetch(RESOURCES_URL)
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('cpu-value').textContent = data.cpu_percent + '%';
-                    document.getElementById('cpu-bar').style.width = data.cpu_percent + '%';
+                    // If status changed, reload the entire page to unlock/lock UI features
+                    if (data.status && data.status !== currentStatus) {
+                        currentStatus = data.status;
+                        window.location.reload();
+                        return;
+                    }
 
-                    const ramUsed = formatBytesJS(data.memory_used);
-                    const ramLimit = formatBytesJS(data.memory_limit);
-                    document.getElementById('ram-value').textContent = ramUsed + ' / ' + ramLimit;
-                    document.getElementById('ram-bar').style.width = data.memory_percent + '%';
+                    // Update status badge
+                    const statusEl = document.querySelector('.mc-resource-value[class*="mc-resource-status-"]');
+                    if (statusEl && data.status_label) {
+                        statusEl.textContent = data.status_label;
+                        statusEl.className = 'mc-resource-value mc-resource-status-' + data.status_color;
+                    }
 
-                    const netRx = formatBytesJS(data.network_rx);
-                    const netTx = formatBytesJS(data.network_tx);
-                    document.getElementById('net-value').textContent = '↓ ' + netRx + ' / ↑ ' + netTx;
+                    // Update resource stats (only if we have values)
+                    if (data.cpu_percent !== undefined) {
+                        const cpuVal = document.getElementById('cpu-value');
+                        const cpuBar = document.getElementById('cpu-bar');
+                        if (cpuVal) cpuVal.textContent = data.cpu_percent + '%';
+                        if (cpuBar) cpuBar.style.width = data.cpu_percent + '%';
+
+                        const ramVal = document.getElementById('ram-value');
+                        const ramBar = document.getElementById('ram-bar');
+                        if (ramVal) ramVal.textContent = formatBytesJS(data.memory_used) + ' / ' + formatBytesJS(data.memory_limit);
+                        if (ramBar) ramBar.style.width = data.memory_percent + '%';
+
+                        const netVal = document.getElementById('net-value');
+                        if (netVal) netVal.textContent = '↓ ' + formatBytesJS(data.network_rx) + ' / ↑ ' + formatBytesJS(data.network_tx);
+                    }
                 })
                 .catch(() => {});
-        }, 10000);
+        }, 5000);
 
         function formatBytesJS(bytes) {
-            if (bytes === 0) return '0 B';
+            if (!bytes || bytes === 0) return '0 B';
             const k = 1024;
             const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
-    </script>
-    @endif
 
-    <script>
         function copyText(text, el) {
             navigator.clipboard.writeText(text).then(() => {
                 const code = el.querySelector('code');

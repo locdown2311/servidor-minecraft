@@ -136,12 +136,40 @@ class ServerController extends Controller
     {
         $this->authorize('view', $server);
 
+        // Sync status from Docker first
+        $this->provisioning->syncStatus($server);
+        $server->refresh();
+
         if (!$server->isRunning()) {
-            return response()->json($this->defaultStats());
+            $stats = $this->defaultStats();
+            $stats['status'] = $server->status;
+            $stats['status_label'] = $server->status_label;
+            $stats['status_color'] = $server->status_color;
+            return response()->json($stats);
         }
 
         $stats = $this->provisioning->getContainerStats($server);
+        $stats['status'] = $server->status;
+        $stats['status_label'] = $server->status_label;
+        $stats['status_color'] = $server->status_color;
         return response()->json($stats);
+    }
+
+    /**
+     * AJAX: Get server status (lightweight, for polling).
+     */
+    public function status(Server $server): JsonResponse
+    {
+        $this->authorize('view', $server);
+
+        $this->provisioning->syncStatus($server);
+        $server->refresh();
+
+        return response()->json([
+            'status' => $server->status,
+            'status_label' => $server->status_label,
+            'status_color' => $server->status_color,
+        ]);
     }
 
     /**
