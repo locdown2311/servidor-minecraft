@@ -164,6 +164,51 @@ class ServerProvisioningService
     }
 
     /**
+     * Sync the server status in the database with the actual Docker container state.
+     */
+    public function syncStatus(Server $server): string
+    {
+        try {
+            $containerName = 'mc_' . $server->id;
+            $info = $this->dockerApi('GET', "/containers/{$containerName}/json", null, null, true);
+
+            if (!$info) {
+                // Container doesn't exist
+                if (in_array($server->status, ['running', 'provisioning'])) {
+                    $server->update(['status' => 'error']);
+                }
+                return $server->status;
+            }
+
+            $state = $info['State']['Status'] ?? 'unknown';
+            $containerId = $info['Id'] ?? $server->container_id;
+
+            $newStatus = match ($state) {
+                'running' => 'running',
+                'exited', 'dead' => 'stopped',
+                'created', 'restarting' => 'provisioning',
+                default => $server->status,
+            };
+
+            $updateData = [
+                'status' => $newStatus,
+                'container_id' => $containerId,
+            ];
+
+            // Update port from Docker if not set
+            if (!$server->port && isset($info['NetworkSettings']['Ports']['25565/tcp'][0]['HostPort'])) {
+                $updateData['port'] = (int) $info['NetworkSettings']['Ports']['25565/tcp'][0]['HostPort'];
+            }
+
+            $server->update($updateData);
+            return $newStatus;
+        } catch (\Exception $e) {
+            Log::warning("Could not sync status for server #{$server->id}: " . $e->getMessage());
+            return $server->status;
+        }
+    }
+
+    /**
      * Start a stopped server.
      */
     public function start(Server $server): bool

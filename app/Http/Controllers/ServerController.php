@@ -66,6 +66,10 @@ class ServerController extends Controller
     {
         $this->authorize('view', $server);
 
+        // Sync status from Docker to fix stale states (error, provisioning, etc.)
+        $this->provisioning->syncStatus($server);
+        $server->refresh();
+
         $stats = $this->defaultStats();
         if ($server->isRunning() && $server->container_id) {
             $stats = $this->provisioning->getContainerStats($server);
