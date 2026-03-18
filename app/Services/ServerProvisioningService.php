@@ -87,25 +87,34 @@ class ServerProvisioningService
             // Start MC container
             $this->dockerApi('POST', "/containers/mc_{$server->id}/start");
 
-            // 3. Create FTP container
+            // 3. Create FTP container with dynamic PASV ports
+            $pasvMinPort = 21100 + (($server->id - 1) * 11);
+            $pasvMaxPort = $pasvMinPort + 10;
+
+            $ftpPortBindings = [
+                '21/tcp' => [
+                    ['HostPort' => (string) $ftpPort],
+                ],
+            ];
+
+            // Bind each PASV port individually (Docker API requirement)
+            for ($p = $pasvMinPort; $p <= $pasvMaxPort; $p++) {
+                $ftpPortBindings["{$p}/tcp"] = [
+                    ['HostPort' => (string) $p],
+                ];
+            }
+
             $ftpResponse = $this->dockerApi('POST', '/containers/create', [
                 'Image' => 'fauria/vsftpd',
                 'Env' => [
                     'FTP_USER=' . $ftpUser,
                     'FTP_PASS=' . $ftpPass,
-                    'PASV_MIN_PORT=21100',
-                    'PASV_MAX_PORT=21110',
+                    'PASV_MIN_PORT=' . $pasvMinPort,
+                    'PASV_MAX_PORT=' . $pasvMaxPort,
                     'PASV_ADDRESS=' . config('app.server_ip', '127.0.0.1'),
                 ],
                 'HostConfig' => [
-                    'PortBindings' => [
-                        '21/tcp' => [
-                            ['HostPort' => (string) $ftpPort],
-                        ],
-                        '21100-21110/tcp' => [
-                            ['HostPort' => '21100-21110'],
-                        ],
-                    ],
+                    'PortBindings' => $ftpPortBindings,
                     'Binds' => [
                         $serverHostPath . ':/home/vsftpd/' . $ftpUser,
                     ],
