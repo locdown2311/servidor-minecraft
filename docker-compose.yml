@@ -49,14 +49,14 @@ services:
       MARIADB_PASSWORD: "${DB_PASSWORD:-secret}"
       MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootsecret}"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
       - mchost
 
 volumes:
-  mysql_data:
+  mariadb_data:
 
 networks:
   mchost:
