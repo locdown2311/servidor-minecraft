@@ -44,9 +44,11 @@ class ServerProvisioningService
             $ftpPass = Str::random(16);
             $volumeName = 'mc_data_' . $server->id;
 
-            // 1. Prepare host path for the server
-            $serverHostPath = $this->hostDataPath . '/mc_' . $server->id;
-            // Note: Docker typically creates the host directory automatically if it doesn't exist when using Binds
+            // 1. Ensure images are present
+            $this->pullImage('itzg/minecraft-server');
+            $this->pullImage('fauria/vsftpd');
+
+            // 2. Prepare host path for the server
 
             // 2. Create Minecraft container
             $mcResponse = $this->dockerApi('POST', '/containers/create', [
@@ -133,6 +135,19 @@ class ServerProvisioningService
             $server->update(['status' => 'error']);
             Log::error("Failed to provision server #{$server->id}: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Pull a Docker image from a registry.
+     */
+    protected function pullImage(string $image): void
+    {
+        try {
+            Log::info("Pulling Docker image: {$image}");
+            $this->dockerApi('POST', '/images/create', null, ['fromImage' => $image]);
+        } catch (\Exception $e) {
+            Log::warning("Failed to pull image {$image}: " . $e->getMessage());
         }
     }
 
@@ -500,7 +515,7 @@ class ServerProvisioningService
             throw new \RuntimeException('Failed to create exec instance');
         }
 
-        $url = $this->dockerHost . '/v1.43' . "/exec/{$execId}/start";
+        $url = $this->dockerHost . '/' . $this->apiVersion . "/exec/{$execId}/start";
         $response = $this->buildClient()
             ->withBody(json_encode(['Detach' => false, 'Tty' => false]), 'application/json')
             ->post($url);
