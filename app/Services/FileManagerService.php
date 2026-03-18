@@ -11,12 +11,14 @@ class FileManagerService
     protected string $dockerHost;
     protected ?string $socketPath;
     protected string $basePath;
+    protected string $apiVersion;
 
     public function __construct()
     {
         $this->socketPath = config('app.docker_socket', '/var/run/docker.sock');
         $this->dockerHost = rtrim(config('app.docker_host', 'http://localhost'), '/');
         $this->basePath = rtrim(config('app.minecraft_data_path', '/mnt/docker_data/servidor_mine'), '/');
+        $this->apiVersion = rtrim(config('app.docker_api_version', 'v1.40'), '/');
     }
 
     /**
@@ -299,7 +301,7 @@ class FileManagerService
         $containerName = 'mc_' . $server->id;
 
         $request = $this->buildClient();
-        $url = $this->dockerHost . '/v1.43';
+        $url = $this->dockerHost . '/' . $this->apiVersion;
 
         // Create exec
         $createResponse = $request->post($url . "/containers/{$containerName}/exec", [

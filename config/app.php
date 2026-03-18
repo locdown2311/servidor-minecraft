@@ -70,6 +70,7 @@ return [
     'server_ip' => env('SERVER_IP', '127.0.0.1'),
     'docker_host' => env('DOCKER_API_HOST', 'http://localhost'),
     'docker_socket' => env('DOCKER_SOCKET', '/var/run/docker.sock'),
+    'docker_api_version' => env('DOCKER_API_VERSION', 'v1.40'),
     'app_storage_path' => env('APP_STORAGE_PATH', './storage'),
     'minecraft_host_data_path' => env('MINECRAFT_HOST_DATA_PATH', '/mnt/docker_data/servidor_mine'),
     'minecraft_container_path' => env('MINECRAFT_CONTAINER_PATH', '/data'),

@@ -12,6 +12,7 @@ class BackupService
     protected ?string $socketPath;
     protected string $backupDir;
     protected string $dataDir;
+    protected string $apiVersion;
 
     public function __construct()
     {
@@ -19,6 +20,7 @@ class BackupService
         $this->dockerHost = rtrim(config('app.docker_host', 'http://localhost'), '/');
         $this->dataDir = rtrim(config('app.minecraft_data_path', '/mnt/docker_data/servidor_mine'), '/');
         $this->backupDir = $this->dataDir . '/backups';
+        $this->apiVersion = rtrim(config('app.docker_api_version', 'v1.40'), '/');
     }
 
     /**
@@ -175,7 +177,7 @@ class BackupService
     {
         $containerName = 'mc_' . $server->id;
         $request = $this->buildClient();
-        $url = $this->dockerHost . '/v1.43';
+        $url = $this->dockerHost . '/' . $this->apiVersion;
 
         $createResponse = $request->post($url . "/containers/{$containerName}/exec", [
             'AttachStdout' => true,

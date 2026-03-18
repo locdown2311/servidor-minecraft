@@ -13,6 +13,7 @@ class ServerProvisioningService
     protected ?string $socketPath;
     protected string $hostDataPath;
     protected string $containerDataPath;
+    protected string $apiVersion;
 
     public function __construct()
     {
@@ -26,6 +27,7 @@ class ServerProvisioningService
         
         // Caminho INTERNO no container Minecraft (itzg/minecraft-server usa /data)
         $this->containerDataPath = config('app.minecraft_container_path', '/data');
+        $this->apiVersion = rtrim(config('app.docker_api_version', 'v1.40'), '/');
     }
 
     /**
@@ -564,7 +566,7 @@ class ServerProvisioningService
         ?array $query = null,
         bool $ignoreErrors = false
     ): ?array {
-        $url = $this->dockerHost . '/v1.43' . $endpoint;
+        $url = $this->dockerHost . '/' . $this->apiVersion . $endpoint;
 
         $request = $this->buildClient();
 
