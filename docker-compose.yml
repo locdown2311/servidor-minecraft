@@ -14,7 +14,7 @@ services:
       - APP_ENV=${APP_ENV:-production}
       - APP_DEBUG=${APP_DEBUG:-false}
       - DB_CONNECTION=mysql
-      - DB_HOST=mysql
+      - DB_HOST=mariadb
       - DB_PORT=3306
       - DB_DATABASE=mchost
       - DB_USERNAME=mchost
@@ -32,22 +32,22 @@ services:
     ports:
       - "85:80"
     depends_on:
-      - mysql
+      - mariadb
     networks:
       - mchost
 
   # ================================
-  # MySQL
+  # MariaDB
   # ================================
-  mysql:
+  mariadb:
     image: mariadb:latest
-    container_name: mchost_mysql
+    container_name: mchost_mariadb
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: mchost
-      MYSQL_USER: mchost
-      MYSQL_PASSWORD: "${DB_PASSWORD:-secret}"
-      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootsecret}"
+      MARIADB_DATABASE: mchost
+      MARIADB_USER: mchost
+      MARIADB_PASSWORD: "${DB_PASSWORD:-secret}"
+      MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootsecret}"
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
