@@ -19,7 +19,7 @@ services:
       # Storage persistente do Laravel (No disco local)
       - ./storage:/var/www/html/storage
     ports:
-      - "80:80"
+      - "85:80"
     depends_on:
       - mysql
     networks:
